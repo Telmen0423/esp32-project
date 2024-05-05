@@ -1,7 +1,318 @@
-background-color: #4158D0; background-image: linear-gradient(43deg, #4158D0 0%,
-#C850C0 46%, #FFCC70 100%);
-<label for="color-picker_1">Text Color:</label>
-<input type="color" id="color-picker_1" name="color-picker_1"></input>
-<br>
-<label for="hex-value_1">Hex value:</label>
-<input type="text" id="hex-value_1" name="hex-value_1" readonly>
+<!DOCTYPE html>
+<html lang="en">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    rel="stylesheet"
+    href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
+    integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr"
+    crossorigin="anonymous"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+    crossorigin="anonymous"
+  />
+  <head>
+    <title>Page Title</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #8ec5fc;
+        background-image: linear-gradient(62deg, #8ec5fc 0%, #e0c3fc 100%);
+      }
+
+      /* The switch - the box around the slider */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+      }
+
+      /* Hide default HTML checkbox */
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      /* The slider */
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #f10a0a;
+        -webkit-transition: 0.4s;
+        transition: 0.4s;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: 0.4s;
+        transition: 0.4s;
+      }
+
+      input:checked + .slider {
+        background-color: #2196f3;
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px #2196f3;
+      }
+
+      input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+      }
+
+      /* Rounded sliders */
+      .slider.round {
+        border-radius: 34px;
+      }
+
+      .slider.round:before {
+        border-radius: 50%;
+      }
+
+      html {
+        font-family: Georgia, serif;
+        display: inline-block;
+        margin: 0px auto;
+        text-align: center;
+      }
+
+      h2 {
+        font-size: 1rem;
+      }
+
+      p {
+        font-size: 1.2rem;
+      }
+
+      .units {
+        font-size: 1rem;
+      }
+
+      .dht-labels {
+        font-size: 1rem;
+        vertical-align: middle;
+        padding-bottom: 15px;
+      }
+      .label {
+        font-size: 17px;
+        vertical-align: text-top;
+      }
+      .temperature-gradient {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        height: 450px;
+        border-radius:15px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="temperature-gradient" id="temperature">
+      <h1>ESP32 Home Control System</h1>
+
+      <p>
+        <i class="la la-send-o" style="color: #d60000"></i>
+        <span class="dht-labels">Темпратур : </span>
+        <span id="tempValue_map">Undifined-yet</span>
+      </p>
+
+      <p>
+        <label class="label">HW</label>
+        <label class="switch">
+          <input
+            type="checkbox"
+            id="isSoftware"
+            onchange="switchChanged()"
+          />
+          <span class="slider round"></span>
+        </label>
+        <label class="label">SW</label>
+      </p>
+
+      <p>
+        <label class="label">OFF</label>
+        <label class="switch">
+          <input
+            type="checkbox"
+            id="checkbox_0"
+            onchange="switchChanged()"
+          />
+          <span class="slider round"></span>
+        </label>
+        <label class="label">ON</label>
+      </p>
+
+      <p>
+        <label class="label">OFF</label>
+        <label class="switch">
+          <input
+            type="checkbox"
+            id="checkbox_1"
+            onchange="switchChanged()"
+          />
+          <span class="slider round"></span>
+        </label>
+        <label class="label">ON</label>
+      </p>
+
+      <p>
+        <label class="label">tempOff</label>
+        <label class="switch">
+          <input
+            type="checkbox"
+            id="checkbox_2"
+            onchange="switchChanged()"
+          />
+          <span class="slider round"></span>
+        </label>
+        <label class="label">tempOn</label>
+      </p>
+      <form>
+        <label>Enter a temprature:</label>
+        <input type="number" id="numberInput" name="number-input">
+        <button type="button" onclick="buttonClicked()">Submit</button>
+      </form>
+    </span>
+  </div>
+
+  <script>
+    var webSocket;
+    var loc = window.location;
+    var wsUrl =
+      "ws://" + loc.host + loc.pathname.replace("esp32", "ws/readings");
+
+      let isSW;
+      var status_0;
+      var status_1;
+      var status_2;
+      var newTempValue = 0;
+
+      //isSoftware
+    function buttonClicked(){
+      var main_checkbox = document.getElementById("isSoftware");
+      if(main_checkbox.checked){
+        isSW = true;
+        var newTempValue = document.getElementById("numberInput").value;
+      status_2 = 1;
+      if (status_0 == undefined || status_0 == null) {
+        status_0 = 0;        
+      }
+      if (status_1 == undefined || status_1 == null) {
+        status_1 = 0;        
+      }
+      switch_event(isSW, status_0, status_1, status_2, newTempValue);
+      }
+    }
+
+
+    function switchChanged() {
+      var main_checkbox = document.getElementById("isSoftware");
+      var checkbox_0 = document.getElementById("checkbox_0");
+      var checkbox_1 = document.getElementById("checkbox_1");
+      var checkbox_2 = document.getElementById("checkbox_2");
+
+      if (main_checkbox.checked) {
+        isSW = true;
+      } else {
+        isSW = false;
+      }
+      if (checkbox_0.checked) {
+        status_0 = 1;
+      } else {
+        status_0 = 0;
+      }
+      if (checkbox_1.checked) {
+        status_1 = 1;
+      } else {
+        status_1 = 0;
+      }
+      if (checkbox_2.checked) {
+          if(status_2 == 1){
+            status_2 = 1;
+          }
+      } else {
+        status_2 = 0;        
+      }
+      if (status_2 == undefined || status_2 == null) {
+        status_2 = 0;        
+      }
+
+      switch_event(isSW, status_0, status_1, status_2, newTempValue);
+    }
+
+    webSocket = new WebSocket(wsUrl);
+
+    webSocket.onopen = (event) => {
+      console.log("WebSocket connection opened.");
+      console.log(wsUrl);
+    };
+
+    webSocket.onClose = (event) => {
+      console.log("WebSocket connection closed.");
+      setTimeout(initializeSocket, 2000);
+    };
+
+    webSocket.onmessage = (event) => {
+      var obj = JSON.parse(event.data);
+      if (obj.id == 1) {
+        console.log("Received data: " + event.data);
+        getParam(obj);
+      }
+    };
+
+    function switch_event(isSW, status_0, status_1, status_2, newTempValue) {
+      var msgSwitch = {
+        id: 2,
+        isSW,
+        data: {
+          status_0,
+          status_1,
+          status_2,
+          newTempValue,
+        },
+        receiver_id: 1,
+      };
+      console.log("sent");
+      console.log("msgSwitch", msgSwitch);
+      webSocket.send(JSON.stringify(msgSwitch));
+    }
+
+    function getParam(obj) {
+      var tempValue = obj.tempValue;
+      document.getElementById("tempValue_map").innerHTML = tempValue;
+      function getTemperatureGradient(temperature) {
+        if (temperature >= 10) {
+          return "linear-gradient(to bottom, #FF4500 0%, #FF0000 100%)"; // Red for high temperature
+        } else if (temperature >= 20) {
+          return "linear-gradient(to bottom, #FFA500 0%, #FFFF00 100%)"; // Yellow for moderate temperature
+        } else {
+          return "linear-gradient(to bottom, #ADD8E6 0%, #0000FF 100%)"; // Blue for low temperature
+        }
+      }
+
+      const temperatureElement = document.getElementById("temperature");
+      const temperature = tempValue; // Replace with the actual temperature value
+      const gradient = getTemperatureGradient(temperature);
+      temperatureElement.style.backgroundImage = gradient;
+    }
+  </script>
+</html>

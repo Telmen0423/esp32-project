@@ -1,12 +1,10 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <DallasTemperature.h>
+#include <ESPAsyncWebServer.h>
 #include <OneWire.h>
 #include <WebSocketsClient.h>
 #include <WiFi.h>
-
-#include <esp_tls.h>
-#include <esp_websocket_client.h>
 
 #define LED_PIN_WIFI 25
 #define LED_PIN_CLIENT 14
@@ -28,6 +26,8 @@
 
 OneWire oneWire(TEMP_PIN);
 DallasTemperature sensors(&oneWire);
+// AsyncWebServer server(80);
+// AsyncWebSocket webSocket("/test");
 WebSocketsClient webSocket;
 float temprature = 0;
 bool isConnected = false;
@@ -146,7 +146,9 @@ void setup() {
   // 192.168.1.124  192.168.1.124
   // 34.64.252.80
 
-  webSocket.begin("192.168.1.124", 8080, "/ws/readings");
+  webSocket.begin("35.239.225.185", 1880, "/ws/receive");
+  // webSocket.setExtraHeaders("Accept-Encoding: gzip\r\n");
+  // webSocket.setExtraHeaders("Cache-Control: no-cache\r\nAccept-Encoding: gzip\r\n");
   webSocket.onEvent(webSocketEvent);
   webSocket.setReconnectInterval(5000);
 }
@@ -210,7 +212,7 @@ void loop() {
           heaterStatus = false;
         }
       }
-      if (temprature != tempValue_before || currentTime - lastTimeInSec >= 1000) {
+      if (currentTime - lastTimeInSec >= 2000) {
         String jsonString = "";
         StaticJsonDocument<200> doc;
         JsonObject object = doc.to<JsonObject>();
@@ -221,7 +223,6 @@ void loop() {
         serializeJson(doc, jsonString);
         webSocket.sendTXT(jsonString);
         Serial.println("Sending message :" + jsonString);
-        tempValue_before = temprature;
         lastTimeInSec = currentTime;
       }
       lastTime = currentTime;
